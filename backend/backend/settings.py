@@ -43,6 +43,8 @@ INSTALLED_APPS = [
     "django.contrib.staticfiles",
     "corsheaders", # Enables cross-origin requests
     "rest_framework", # Required for Django RestAPIs
+    "file_uploads", # Django app for handling uploads
+    "django_extensions"
 ]
 
 MIDDLEWARE = [
@@ -134,3 +136,9 @@ STATIC_URL = "static/"
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
 CORS_ALLOWED_ORIGINS = ["http://localhost:5173"]
+
+MEDIA_URL = "/media/"
+MEDIA_ROOT = os.path.join(BASE_DIR, "media")
+
+if not os.path.exists(MEDIA_ROOT):
+    os.makedirs(MEDIA_ROOT)

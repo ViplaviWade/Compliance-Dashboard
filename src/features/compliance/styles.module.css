@@ -50,11 +50,12 @@ input[type="file"]{
     background-color: #0056b3;
 }
 
-.dialogOverlay{
-    background: rgba(0, 0, 0, 0.6);
+.dialogOverlay {
+    background: rgba(0, 0, 0, 0);
     position: fixed;
     inset: 0;
 }
+
 
 .dialogcContent{
     background: white;
