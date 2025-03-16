@@ -15,17 +15,27 @@ class UploadedFileView(APIView):
         file = request.FILES.get("file")
         category = request.data.get("category")
 
-        if not file or not category:
-            return Response({"error": "Missing file or category"}, status=status.HTTP_400_BAD_REQUEST)
+        if not file:
+            return Response({"error": "No file received"}, status=status.HTTP_400_BAD_REQUEST)
 
-        print(f"File Name: {file.name}")
-        print(f"File Size: {file.size}")
+        if not category:
+            return Response({"error": "No category provided"}, status=status.HTTP_400_BAD_REQUEST)
 
+        # Check file size manually
+        if file.size > 5 * 1024 * 1024:  # 5MB limit
+            return Response({"error": "File size exceeds 5MB limit"}, status=status.HTTP_400_BAD_REQUEST)
+
+        # Check file extension
+        allowed_extensions = ["pdf", "jpg", "png", "jpeg", "docx"]
+        if not file.name.lower().endswith(tuple(allowed_extensions)):
+            return Response({"error": "Invalid file type"}, status=status.HTTP_400_BAD_REQUEST)
+
+        # Proceed with file serialization
         file_serializer = UploadedFileSerializer(data={"file": file, "category": category})
 
         if file_serializer.is_valid():
             file_serializer.save()
+
             return Response({"message": "File uploaded successfully!"}, status=status.HTTP_201_CREATED)
 
-        print("Serializer Errors:", file_serializer.errors)
         return Response(file_serializer.errors, status=status.HTTP_400_BAD_REQUEST)

@@ -1,7 +1,7 @@
 import axios from "axios";
 import React, { useState } from "react";
-import { Modal, Button } from "react-bootstrap"; // ✅ Import Bootstrap Modal
 import * as Accordion from "@radix-ui/react-accordion";
+import { Modal, Button } from "react-bootstrap";
 import styles from "./styles.module.css";
 
 const API_URL = "http://127.0.0.1:8000/api/upload/";
@@ -17,14 +17,37 @@ const Compliance: React.FC = () => {
     sourceOfFunds: null,
   });
 
-  const [showModal, setShowModal] = useState(false);
-  const [modalMessage, setModalMessage] = useState(""); // ✅ Store message for modal
+  const [modalOpen, setModalOpen] = useState(false);
+  const [uploadStatus, setUploadStatus] = useState<string | null>(null);
+
+  const handleModalClose = () => {
+    // Reset file input fields visually
+    Object.keys(uploadedFiles).forEach((docType) => {
+      const fileInput = document.getElementById(docType) as HTMLInputElement;
+      if (fileInput) {
+        fileInput.value = ""; // Clears the selected file
+      }
+    });
+
+    // Reset file state
+    setUploadedFiles({
+      governmentID: null,
+      proofOfAddress: null,
+      selfieWithID: null,
+      bankStatement: null,
+      sourceOfFunds: null,
+    });
+
+    // Close the modal
+    setModalOpen(false);
+  };
 
   const handleFileChange = (
     event: React.ChangeEvent<HTMLInputElement>,
     key: string
   ) => {
     const file = event.target.files?.[0];
+    console.log(`File selected for ${key}:`, file);
     if (file) {
       setUploadedFiles((prev) => ({ ...prev, [key]: file }));
     }
@@ -43,16 +66,17 @@ const Compliance: React.FC = () => {
 
     categoryFiles.forEach((docType) => {
       if (uploadedFiles[docType]) {
+        console.log(`Adding file ${docType}`);
         formData.append("file", uploadedFiles[docType] as File);
+        formData.append("category", category);
         hasFiles = true;
       }
     });
 
-    formData.append("category", category); // ✅ Ensure category is included
-
     if (!hasFiles) {
-      setModalMessage("No files uploaded.");
-      setShowModal(true);
+      alert(
+        `Please upload at least one ${category} document before submitting.`
+      );
       return;
     }
 
@@ -62,22 +86,16 @@ const Compliance: React.FC = () => {
       });
 
       if (response.status === 201) {
-        setModalMessage(`${category} Documents uploaded successfully!`);
-        setUploadedFiles((prev) => {
-          const updatedFiles = { ...prev };
-          categoryFiles.forEach((docType) => {
-            updatedFiles[docType] = null;
-          });
-          return updatedFiles;
-        });
+        setUploadStatus(`${category} Documents uploaded successfully!`);
+        setModalOpen(true);
       } else {
-        setModalMessage("Upload failed. Please try again.");
+        setUploadStatus("Upload failed. Please try again.");
+        setModalOpen(true);
       }
-    } catch (error: any) {
-      console.error("Error uploading file:", error?.response?.data || error);
-      setModalMessage("Upload failed. Invalid file type or size.");
-    } finally {
-      setShowModal(true); // ✅ Open modal after upload attempt
+    } catch (error) {
+      console.error("Error uploading file:", error);
+      setUploadStatus("Upload failed. Invalid file type or size.");
+      setModalOpen(true);
     }
   };
 
@@ -103,6 +121,7 @@ const Compliance: React.FC = () => {
               <li>
                 Government Issued ID
                 <input
+                  id="governmentID"
                   type="file"
                   onChange={(e) => handleFileChange(e, "governmentID")}
                 />
@@ -110,6 +129,7 @@ const Compliance: React.FC = () => {
               <li>
                 Proof of Address
                 <input
+                  id="proofOfAddress"
                   type="file"
                   onChange={(e) => handleFileChange(e, "proofOfAddress")}
                 />
@@ -117,6 +137,7 @@ const Compliance: React.FC = () => {
               <li>
                 Selfie with ID
                 <input
+                  id="selfieWithID"
                   type="file"
                   onChange={(e) => handleFileChange(e, "selfieWithID")}
                 />
@@ -140,7 +161,8 @@ const Compliance: React.FC = () => {
           </Accordion.Header>
           <Accordion.Content className={styles.accordionContent}>
             <p>
-              <strong>Why required?</strong> To ensure legal source of funds.
+              <strong>Why required?</strong> To ensure the legal source of
+              funds.
             </p>
             <ul>
               <li>
@@ -168,14 +190,14 @@ const Compliance: React.FC = () => {
         </Accordion.Item>
       </Accordion.Root>
 
-      {/* ✅ React-Bootstrap Modal for Submission Message */}
-      <Modal show={showModal} onHide={() => setShowModal(false)}>
+      {/* React Bootstrap Modal */}
+      <Modal show={modalOpen} onHide={handleModalClose} centered>
         <Modal.Header closeButton>
-          <Modal.Title>Submission Status</Modal.Title>
+          <Modal.Title>File Submission</Modal.Title>
         </Modal.Header>
-        <Modal.Body>{modalMessage}</Modal.Body>
+        <Modal.Body>{uploadStatus || "No status available"}</Modal.Body>
         <Modal.Footer>
-          <Button variant="primary" onClick={() => setShowModal(false)}>
+          <Button variant="primary" onClick={handleModalClose}>
             OK
           </Button>
         </Modal.Footer>
