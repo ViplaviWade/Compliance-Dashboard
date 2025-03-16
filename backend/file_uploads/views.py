@@ -10,32 +10,38 @@ class UploadedFileView(APIView):
 
     def post(self, request, *args, **kwargs):
         print("Received Request Data:", request.data)
-        print("Received File:", request.FILES)
+        print("Received Files:", request.FILES)
 
-        file = request.FILES.get("file")
+        files = request.FILES.getlist("files")  # Get multiple files
         category = request.data.get("category")
 
-        if not file:
-            return Response({"error": "No file received"}, status=status.HTTP_400_BAD_REQUEST)
+        if not files:
+            return Response({"error": "No files uploaded."}, status=status.HTTP_400_BAD_REQUEST)
 
-        if not category:
-            return Response({"error": "No category provided"}, status=status.HTTP_400_BAD_REQUEST)
+        errors = []
+        saved_files = []
 
-        # Check file size manually
-        if file.size > 5 * 1024 * 1024:  # 5MB limit
-            return Response({"error": "File size exceeds 5MB limit"}, status=status.HTTP_400_BAD_REQUEST)
+        for file in files:
+            # Check file size (Example: Limit to 5MB)
+            if file.size > 5 * 1024 * 1024:
+                errors.append(f"{file.name} is too large. Max 5MB.")
+                continue  # Skip saving this file
 
-        # Check file extension
-        allowed_extensions = ["pdf", "jpg", "png", "jpeg", "docx"]
-        if not file.name.lower().endswith(tuple(allowed_extensions)):
-            return Response({"error": "Invalid file type"}, status=status.HTTP_400_BAD_REQUEST)
+            # Validate file format
+            allowed_formats = ["pdf", "jpg", "jpeg", "png"]
+            if not file.name.split(".")[-1].lower() in allowed_formats:
+                errors.append(f"{file.name} is not a supported format.")
+                continue  # Skip saving this file
 
-        # Proceed with file serialization
-        file_serializer = UploadedFileSerializer(data={"file": file, "category": category})
+            file_serializer = UploadedFileSerializer(data={"file": file, "category": category})
 
-        if file_serializer.is_valid():
-            file_serializer.save()
+            if file_serializer.is_valid():
+                file_serializer.save()
+                saved_files.append(file.name)
+            else:
+                errors.append(f"{file.name} could not be uploaded. Invalid file.")
 
-            return Response({"message": "File uploaded successfully!"}, status=status.HTTP_201_CREATED)
+        if errors:
+            return Response({"success": saved_files, "errors": errors}, status=status.HTTP_400_BAD_REQUEST)
 
-        return Response(file_serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        return Response({"message": "Files uploaded successfully!", "files": saved_files}, status=status.HTTP_201_CREATED)

@@ -1,7 +1,15 @@
 import axios from "axios";
 import React, { useState } from "react";
 import * as Accordion from "@radix-ui/react-accordion";
-import { Modal, Button } from "react-bootstrap";
+import {
+  Modal,
+  Button,
+  Form,
+  Card,
+  Container,
+  Col,
+  Row,
+} from "react-bootstrap";
 import styles from "./styles.module.css";
 
 const API_URL = "http://127.0.0.1:8000/api/upload/";
@@ -18,6 +26,7 @@ const Compliance: React.FC = () => {
   });
 
   const [modalOpen, setModalOpen] = useState(false);
+  const [fileErrors, setFileErrors] = useState<string[]>([]);
   const [uploadStatus, setUploadStatus] = useState<string | null>(null);
 
   const handleModalClose = () => {
@@ -67,16 +76,16 @@ const Compliance: React.FC = () => {
     categoryFiles.forEach((docType) => {
       if (uploadedFiles[docType]) {
         console.log(`Adding file ${docType}`);
-        formData.append("file", uploadedFiles[docType] as File);
-        formData.append("category", category);
+        formData.append("files", uploadedFiles[docType] as File);
         hasFiles = true;
       }
     });
 
+    formData.append("category", category);
+
     if (!hasFiles) {
-      alert(
-        `Please upload at least one ${category} document before submitting.`
-      );
+      setUploadStatus("Please upload at least one document before submitting.");
+      setModalOpen(true);
       return;
     }
 
@@ -86,108 +95,206 @@ const Compliance: React.FC = () => {
       });
 
       if (response.status === 201) {
-        setUploadStatus(`${category} Documents uploaded successfully!`);
+        setUploadStatus("✅ Documents uploaded successfully!");
+        setUploadedFiles({
+          governmentID: null,
+          proofOfAddress: null,
+          selfieWithID: null,
+          bankStatement: null,
+          sourceOfFunds: null,
+        });
+
         setModalOpen(true);
       } else {
-        setUploadStatus("Upload failed. Please try again.");
+        setUploadStatus("⚠️ Some files failed to upload. Please check errors.");
         setModalOpen(true);
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error uploading file:", error);
-      setUploadStatus("Upload failed. Invalid file type or size.");
+
+      if (error.response?.data?.errors) {
+        setFileErrors(error.response.data.errors);
+      } else {
+        setFileErrors([]);
+      }
+
+      setUploadStatus("❌ Upload failed. Some files have errors.");
       setModalOpen(true);
     }
   };
 
   return (
-    <div className={styles.container}>
-      <h1>Compliance Page</h1>
-      <p>Manage your KYC and AML Documents here</p>
-
+    <Container>
+      <Row>
+        <Col className="text-center">
+          <h3>Compliance Page</h3>
+          <p>Manage your KYC and AML Documents here</p>
+        </Col>
+      </Row>
       <Accordion.Root type="single" collapsible className={styles.accordion}>
-        {/* KYC Section */}
-        <Accordion.Item value="kyc">
-          <Accordion.Header>
-            <Accordion.Trigger className={styles.accordionTrigger}>
-              KYC Documents
-            </Accordion.Trigger>
-          </Accordion.Header>
-          <Accordion.Content className={styles.accordionContent}>
-            <p>
-              <strong>Why required?</strong> To verify personal identity and
-              prevent fraud.
-            </p>
-            <ul>
-              <li>
-                Government Issued ID
-                <input
-                  id="governmentID"
-                  type="file"
-                  onChange={(e) => handleFileChange(e, "governmentID")}
-                />
-              </li>
-              <li>
-                Proof of Address
-                <input
-                  id="proofOfAddress"
-                  type="file"
-                  onChange={(e) => handleFileChange(e, "proofOfAddress")}
-                />
-              </li>
-              <li>
-                Selfie with ID
-                <input
-                  id="selfieWithID"
-                  type="file"
-                  onChange={(e) => handleFileChange(e, "selfieWithID")}
-                />
-              </li>
-            </ul>
-            <button
-              className={styles.submitButton}
-              onClick={() => handleSubmit("KYC")}
-            >
-              Submit KYC Documents
-            </button>
-          </Accordion.Content>
-        </Accordion.Item>
+        <Row>
+          <Col>
+            {/* KYC Section */}
+            <Accordion.Item value="kyc" className={styles.accordionBorder}>
+              <Accordion.Header>
+                <Accordion.Trigger className={styles.accordionTrigger}>
+                  KYC Documents
+                </Accordion.Trigger>
+              </Accordion.Header>
+              <Accordion.Content className={styles.accordionContent}>
+                <p>
+                  <strong>Why required?</strong> To verify personal identity and
+                  prevent fraud.
+                </p>
+                <Card>
+                  <Card.Body className="p-2">
+                    <Form.Group controlId="formFile" as={Row}>
+                      <Form.Label column sm="12">
+                        Government Issued ID
+                      </Form.Label>
+                      <Col sm="12">
+                        <Form.Control
+                          type="file"
+                          className="m-0"
+                          onChange={(e) =>
+                            handleFileChange(
+                              e as React.ChangeEvent<HTMLInputElement>,
+                              "governmentID"
+                            )
+                          }
+                        />
+                      </Col>
+                    </Form.Group>
+                  </Card.Body>
+                </Card>
 
-        {/* AML Section */}
-        <Accordion.Item value="aml">
-          <Accordion.Header>
-            <Accordion.Trigger className={styles.accordionTrigger}>
-              AML Documents
-            </Accordion.Trigger>
-          </Accordion.Header>
-          <Accordion.Content className={styles.accordionContent}>
-            <p>
-              <strong>Why required?</strong> To ensure the legal source of
-              funds.
-            </p>
-            <ul>
-              <li>
-                Bank Statement
-                <input
-                  type="file"
-                  onChange={(e) => handleFileChange(e, "bankStatement")}
-                />
-              </li>
-              <li>
-                Source of Funds Declaration
-                <input
-                  type="file"
-                  onChange={(e) => handleFileChange(e, "sourceOfFunds")}
-                />
-              </li>
-            </ul>
-            <button
-              className={styles.submitButton}
-              onClick={() => handleSubmit("AML")}
-            >
-              Submit AML Documents
-            </button>
-          </Accordion.Content>
-        </Accordion.Item>
+                <Card>
+                  <Card.Body className="p-2">
+                    <Form.Group controlId="formFile" as={Row}>
+                      <Form.Label column sm="12">
+                        Proof of Address
+                      </Form.Label>
+                      <Col sm="12">
+                        <Form.Control
+                          type="file"
+                          className="m-0"
+                          onChange={(e) =>
+                            handleFileChange(
+                              e as React.ChangeEvent<HTMLInputElement>,
+                              "proofOfAddress"
+                            )
+                          }
+                        />
+                      </Col>
+                    </Form.Group>
+                  </Card.Body>
+                </Card>
+
+                <Card>
+                  <Card.Body className="p-2">
+                    <Form.Group controlId="formFile" as={Row}>
+                      <Form.Label column sm="12">
+                        Selfie With ID
+                      </Form.Label>
+                      <Col sm="12">
+                        <Form.Control
+                          type="file"
+                          className="m-0"
+                          onChange={(e) =>
+                            handleFileChange(
+                              e as React.ChangeEvent<HTMLInputElement>,
+                              "selfieWithID"
+                            )
+                          }
+                        />
+                      </Col>
+                    </Form.Group>
+                  </Card.Body>
+                </Card>
+
+                <div className="text-center">
+                  <Button
+                    className="mt-3 w-50"
+                    variant="primary"
+                    type="submit"
+                    onClick={() => handleSubmit("KYC")}
+                  >
+                    Submit KYC Documents
+                  </Button>
+                </div>
+              </Accordion.Content>
+            </Accordion.Item>
+          </Col>
+          <Col>
+            {/* AML Section */}
+            <Accordion.Item value="aml" className={styles.accordionBorder}>
+              <Accordion.Header>
+                <Accordion.Trigger className={styles.accordionTrigger}>
+                  AML Documents
+                </Accordion.Trigger>
+              </Accordion.Header>
+              <Accordion.Content className={styles.accordionContent}>
+                <p>
+                  <strong>Why required?</strong> To ensure the legal source of
+                  funds.
+                </p>
+                <Card>
+                  <Card.Body className="p-2">
+                    <Form.Group controlId="formFile" as={Row}>
+                      <Form.Label column sm="12">
+                        Bank Statement
+                      </Form.Label>
+                      <Col sm="12">
+                        <Form.Control
+                          type="file"
+                          className="m-0"
+                          onChange={(e) =>
+                            handleFileChange(
+                              e as React.ChangeEvent<HTMLInputElement>,
+                              "bankStatement"
+                            )
+                          }
+                        />
+                      </Col>
+                    </Form.Group>
+                  </Card.Body>
+                </Card>
+                <Card>
+                  <Card.Body className="p-2">
+                    <Form.Group controlId="formFile" as={Row}>
+                      <Form.Label column sm="12">
+                        Source of Fund Declaration
+                      </Form.Label>
+                      <Col sm="12">
+                        <Form.Control
+                          type="file"
+                          className="m-0"
+                          onChange={(e) =>
+                            handleFileChange(
+                              e as React.ChangeEvent<HTMLInputElement>,
+                              "sourceOfFunds"
+                            )
+                          }
+                        />
+                      </Col>
+                    </Form.Group>
+                  </Card.Body>
+                </Card>
+
+                <div className="text-center">
+                  <Button
+                    className="mt-3 w-50"
+                    variant="primary"
+                    type="submit"
+                    onClick={() => handleSubmit("AML")}
+                  >
+                    Submit AML Documents
+                  </Button>
+                </div>
+              </Accordion.Content>
+            </Accordion.Item>
+          </Col>
+        </Row>
       </Accordion.Root>
 
       {/* React Bootstrap Modal */}
@@ -202,7 +309,7 @@ const Compliance: React.FC = () => {
           </Button>
         </Modal.Footer>
       </Modal>
-    </div>
+    </Container>
   );
 };
 

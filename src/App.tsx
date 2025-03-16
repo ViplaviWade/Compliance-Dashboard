@@ -7,31 +7,20 @@ const App: React.FC = () => {
   return (
     <Router>
       <>
-        <Navbar bg="dark" expand="lg" variant="dark">
+        <Navbar bg="dark" expand="lg" variant="dark" className="mb-3">
           <Container className="d-flex justify-content-center align-items-center">
             <Navbar.Brand
               style={{
                 color: "white",
-                fontSize: "22px",
-                fontWeight: "bold",
+                fontSize: "32px",
+                fontWeight: "normal",
                 textAlign: "center",
+                padding: 20,
+                textTransform: "uppercase",
               }}
             >
               Compliance Dashboard
             </Navbar.Brand>
-
-            <Nav className="ms-auto">
-              <Nav.Link
-                as={Link}
-                to="/compliance"
-                style={{
-                  color: "white",
-                  fontSize: "18px",
-                  fontWeight: "bold",
-                  marginLeft: "20px",
-                }}
-              ></Nav.Link>
-            </Nav>
           </Container>
         </Navbar>
 
@@ -39,13 +28,20 @@ const App: React.FC = () => {
           <Route
             path="/"
             element={
-              <Container className="text-center mt-5">
-                <h1>Welcome to Viplavi Wade's Compliance Dashboard</h1>
-                <p>Manage your compliance documents easily.</p>
+              <Container
+                className="text-center mt-5 d-flex align-items-center"
+                style={{ height: "70vh" }}
+              >
+                <div className="flex-grow-1">
+                  <h1>Welcome to Viplavi Wade's Compliance Dashboard</h1>
+                  <p className="py-4 lead">
+                    Manage your compliance documents easily.
+                  </p>
 
-                <Link to="/compliance">
-                  <Button variant="primary">Get Started</Button>
-                </Link>
+                  <Link to="/compliance">
+                    <Button variant="primary">Get Started</Button>
+                  </Link>
+                </div>
               </Container>
             }
           />
