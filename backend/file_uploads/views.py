@@ -1,33 +1,31 @@
-from django.core.files.storage import default_storage
-from django.core.files.base import ContentFile
-from django.http import JsonResponse
+from rest_framework.parsers import MultiPartParser, FormParser
+from rest_framework.response import Response
+from rest_framework import status
 from rest_framework.views import APIView
-from rest_framework.parsers import MultiPartParser
-import os
+from .models import UploadedFile
+from .serializers import UploadedFileSerializer
 
-class FileUploadView(APIView):
-    parser_classes = [MultiPartParser]
-
-    ALLOWED_FILE_TYPES = ["pdf", "jpg", "jpeg", "png"]  # Allowed extensions
-    MAX_FILE_SIZE = 5 * 1024 * 1024  # 5MB limit
+class UploadedFileView(APIView):
+    parser_classes = (MultiPartParser, FormParser)
 
     def post(self, request, *args, **kwargs):
-        file = request.FILES.get('file')
+        print("Received Request Data:", request.data)
+        print("Received File:", request.FILES)
 
-        if not file:
-            return JsonResponse({"error": "No file uploaded"}, status=400)
+        file = request.FILES.get("file")
+        category = request.data.get("category")
 
-        # Validate file size
-        if file.size > self.MAX_FILE_SIZE:
-            return JsonResponse({"error": "File too large (max 5MB allowed)"}, status=400)
+        if not file or not category:
+            return Response({"error": "Missing file or category"}, status=status.HTTP_400_BAD_REQUEST)
 
-        # Validate file extension
-        extension = file.name.split('.')[-1].lower()
-        if extension not in self.ALLOWED_FILE_TYPES:
-            return JsonResponse({"error": "Invalid file type. Allowed: pdf, jpg, png"}, status=400)
+        print(f"File Name: {file.name}")
+        print(f"File Size: {file.size}")
 
-        # Save file to media folder
-        file_path = os.path.join("media/uploads", file.name)
-        default_storage.save(file_path, ContentFile(file.read()))
+        file_serializer = UploadedFileSerializer(data={"file": file, "category": category})
 
-        return JsonResponse({"message": "File uploaded successfully", "file_url": f"/media/uploads/{file.name}"}, status=201)
+        if file_serializer.is_valid():
+            file_serializer.save()
+            return Response({"message": "File uploaded successfully!"}, status=status.HTTP_201_CREATED)
+
+        print("Serializer Errors:", file_serializer.errors)
+        return Response(file_serializer.errors, status=status.HTTP_400_BAD_REQUEST)

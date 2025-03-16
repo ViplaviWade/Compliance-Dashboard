@@ -36,3 +36,7 @@ backend/db.sqlite3
 
 # Django Migrations (if applicable)
 backend/**/migrations/
+
+# Ignore uploaded files (but not other backend files)
+backend/**/media/uploads/
+
